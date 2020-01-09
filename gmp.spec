@@ -6,7 +6,7 @@
 Summary: A GNU arbitrary precision library
 Name: gmp
 Version: 4.3.1
-Release: 7%{?dist}.2
+Release: 10%{?dist}
 URL: http://gmplib.org/
 Source0: ftp://ftp.gnu.org/pub/gnu/gmp/gmp-%{version}.tar.bz2
 Source2: gmp.h
@@ -15,6 +15,8 @@ Source3: gmp-mparam.h
 Patch0: gmp-4.0.1-s390.patch
 Patch1: gmp-4.3.1-compat.patch
 Patch2: gmp-4.3.1-macro.patch
+Patch3: gmp-s390x-optimization.patch
+Patch4: gmp-s390-31bit-optimization.patch
 # mpn/s390x/gmp-mparam.h: LGPLv2+
 # demos/calc/calc.c: GPLv3+
 License: LGPLv2+ and  GPLv3+ and LGPLv3+
@@ -63,6 +65,8 @@ in applications.
 %patch0 -p1 -b .s390
 %patch1 -p1 -b .compat
 %patch2 -p1 -b .macro-fix
+%patch3 -p1 -b .s390x-opt
+%patch4 -p1 -b .s390-opt
 
 %build
 autoreconf -if
@@ -239,12 +243,17 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
-* Fri Mar 02 2012 Peter Schiffer <pschiffe@redhat.com> - 4.3.1-7.el6_2.2
-- Related: #798771
+* Wed Nov 18 2015 Frantisek Kluknavsky <fkluknav@redhat.com> - 4.3.1-10
+- Backported assembler routines from recent gmp-6:
+  gmp-s390x-optimization.patch, gmp-s390-31bit-optimization.patch
+- Resolves: #1149237
+
+* Fri Mar 02 2012 Peter Schiffer <pschiffe@redhat.com> - 4.3.1-9
+- Related: #786650
   fixed FTBFS on some hosts
 
-* Wed Feb 29 2012 Peter Schiffer <pschiffe@redhat.com> - 4.3.1-7.el6_2.1
-- Resolves: #798771
+* Wed Feb 29 2012 Peter Schiffer <pschiffe@redhat.com> - 4.3.1-8
+- Resolves: #786650
   readded missing '__gmp_doprnt_mpf' symbol
 
 * Wed Feb 24 2010 Ivama Hutarova Varekova <varekova@redhat.com> - 4.3.1-7
