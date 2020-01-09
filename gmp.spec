@@ -6,7 +6,7 @@
 Summary: A GNU arbitrary precision library
 Name: gmp
 Version: 4.3.1
-Release: 10%{?dist}
+Release: 12%{?dist}
 URL: http://gmplib.org/
 Source0: ftp://ftp.gnu.org/pub/gnu/gmp/gmp-%{version}.tar.bz2
 Source2: gmp.h
@@ -98,7 +98,7 @@ export LD_LIBRARY_PATH=`pwd`/.libs
 for i in $(find ../ -name Makefile); do \
     perl -pi -e 'undef $/; s|^PACKAGE_COPYRIGHT =.+?licenses/\.\n\n||sm' "$(readlink -m "$i")"; \
 done
-make CFLAGS="$RPM_OPT_FLAGS" %{?_smp_mflags}
+make CFLAGS="$RPM_OPT_FLAGS -g" CXXFLAGS="$RPM_OPT_FLAGS -g" %{?_smp_mflags}
 cd ..
 %ifarch %{ix86}
 mkdir build-sse2
@@ -126,7 +126,7 @@ export LD_LIBRARY_PATH=`pwd`/.libs
 for i in $(find ../ -name Makefile); do \
     perl -pi -e 'undef $/; s|^PACKAGE_COPYRIGHT =.+?licenses/\.\n\n||sm' "$(readlink -m "$i")"; \
 done
-make %{?_smp_mflags}
+make CFLAGS="-g" CXXFLAGS="-g" %{?_smp_mflags}
 unset CFLAGS
 cd ..
 %endif
@@ -243,6 +243,14 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Thu Nov 24 2016 David Kaspar [Dee'Kej] <dkaspar@redhat.com> - 4.3.1-12
+- Add the '-g' into CXXFLAGS as well, because limgmpxx is compiled with g++
+  Related: #729039
+
+* Thu Oct  6 2016 David Kaspar [Dee'Kej] <dkaspar@redhat.com> - 4.3.1-11
+- Explicitly added '-g' option into CFLAGS to correctly build .debug_info for i386
+  Resolves: #729039
+
 * Wed Nov 18 2015 Frantisek Kluknavsky <fkluknav@redhat.com> - 4.3.1-10
 - Backported assembler routines from recent gmp-6:
   gmp-s390x-optimization.patch, gmp-s390-31bit-optimization.patch
