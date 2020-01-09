@@ -6,7 +6,7 @@
 Summary: A GNU arbitrary precision library
 Name: gmp
 Version: 4.3.1
-Release: 12%{?dist}
+Release: 13%{?dist}
 URL: http://gmplib.org/
 Source0: ftp://ftp.gnu.org/pub/gnu/gmp/gmp-%{version}.tar.bz2
 Source2: gmp.h
@@ -104,7 +104,8 @@ cd ..
 mkdir build-sse2
 cd build-sse2
 ln -s ../configure .
-CFLAGS="%{optflags} -march=pentium4"
+export CFLAGS="%{optflags} -march=pentium4"
+export CXXFLAGS="%{optflags} -march=pentium4"
 ./configure --build=%{_build} --host=%{_host} \
          --program-prefix=%{?_program_prefix} \
          --prefix=%{_prefix} \
@@ -126,7 +127,7 @@ export LD_LIBRARY_PATH=`pwd`/.libs
 for i in $(find ../ -name Makefile); do \
     perl -pi -e 'undef $/; s|^PACKAGE_COPYRIGHT =.+?licenses/\.\n\n||sm' "$(readlink -m "$i")"; \
 done
-make CFLAGS="-g" CXXFLAGS="-g" %{?_smp_mflags}
+make %{?_smp_mflags}
 unset CFLAGS
 cd ..
 %endif
@@ -243,6 +244,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Thu Mar 09 2017 David Kaspar [Dee'Kej] <dkaspar@redhat.com> - 4.3.1-13
+- Fix the build process to avoid performance regressions on x86 family
+
 * Thu Nov 24 2016 David Kaspar [Dee'Kej] <dkaspar@redhat.com> - 4.3.1-12
 - Add the '-g' into CXXFLAGS as well, because limgmpxx is compiled with g++
   Related: #729039
