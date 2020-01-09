@@ -6,14 +6,15 @@
 Summary: A GNU arbitrary precision library
 Name: gmp
 Version: 4.3.1
-Release: 7%{?dist}
+Release: 7%{?dist}.2
 URL: http://gmplib.org/
 Source0: ftp://ftp.gnu.org/pub/gnu/gmp/gmp-%{version}.tar.bz2
 Source2: gmp.h
 Source3: gmp-mparam.h
 # patch s390 gmp-mparam.h to match other archs
 Patch0: gmp-4.0.1-s390.patch
-#Patch1: gmp-4.2.4-no-host-target-check.patch
+Patch1: gmp-4.3.1-compat.patch
+Patch2: gmp-4.3.1-macro.patch
 # mpn/s390x/gmp-mparam.h: LGPLv2+
 # demos/calc/calc.c: GPLv3+
 License: LGPLv2+ and  GPLv3+ and LGPLv3+
@@ -60,7 +61,8 @@ in applications.
 %prep
 %setup -q 
 %patch0 -p1 -b .s390
-#%patch1 -p1 -b .no-host-target
+%patch1 -p1 -b .compat
+%patch2 -p1 -b .macro-fix
 
 %build
 autoreconf -if
@@ -89,6 +91,9 @@ ln -s ../configure .
          --enable-mpbsd --enable-cxx
 perl -pi -e 's|hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=\"-L\\\$libdir\"|g;' libtool
 export LD_LIBRARY_PATH=`pwd`/.libs
+for i in $(find ../ -name Makefile); do \
+    perl -pi -e 'undef $/; s|^PACKAGE_COPYRIGHT =.+?licenses/\.\n\n||sm' "$(readlink -m "$i")"; \
+done
 make CFLAGS="$RPM_OPT_FLAGS" %{?_smp_mflags}
 cd ..
 %ifarch %{ix86}
@@ -114,6 +119,9 @@ CFLAGS="%{optflags} -march=pentium4"
          --enable-mpbsd --enable-cxx
 perl -pi -e 's|hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=\"-L\\\$libdir\"|g;' libtool
 export LD_LIBRARY_PATH=`pwd`/.libs
+for i in $(find ../ -name Makefile); do \
+    perl -pi -e 'undef $/; s|^PACKAGE_COPYRIGHT =.+?licenses/\.\n\n||sm' "$(readlink -m "$i")"; \
+done
 make %{?_smp_mflags}
 unset CFLAGS
 cd ..
@@ -231,6 +239,14 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Fri Mar 02 2012 Peter Schiffer <pschiffe@redhat.com> - 4.3.1-7.el6_2.2
+- Related: #798771
+  fixed FTBFS on some hosts
+
+* Wed Feb 29 2012 Peter Schiffer <pschiffe@redhat.com> - 4.3.1-7.el6_2.1
+- Resolves: #798771
+  readded missing '__gmp_doprnt_mpf' symbol
+
 * Wed Feb 24 2010 Ivama Hutarova Varekova <varekova@redhat.com> - 4.3.1-7
 - Resolves: #543948
   fix license tag
