@@ -6,7 +6,7 @@
 Summary: A GNU arbitrary precision library
 Name: gmp
 Version: 6.0.0
-Release: 12%{?dist}
+Release: 15%{?dist}
 Epoch: 1
 URL: http://gmplib.org/
 Source0: ftp://ftp.gmplib.org/pub/gmp-%{version}/gmp-%{version}a.tar.bz2
@@ -22,6 +22,9 @@ BuildRequires: autoconf automake libtool
 BuildRequires: fipscheck
 #autoreconf on arm needs:
 BuildRequires: perl-Carp
+
+# For RHEL7 and below, we need to explicitly enable the hardened build:
+%global _hardened_build 1
 
 %description
 The gmp package contains GNU MP, a library for arbitrary precision
@@ -74,60 +77,47 @@ if as --help | grep -q execstack; then
   # the object files do not require an executable stack
   export CCAS="gcc -c -Wa,--noexecstack"
 fi
+
+# Temporary workaround for BZ #1409738 - once it gets fixed
+# (e.g. build starts to fail because of this), remove it...
+sed -e 's|compiler_flags=$|compiler_flags="%{_hardened_ldflags}"|' -i ltmain.sh
+
+
 mkdir base
 cd base
 ln -s ../configure .
+
 %ifarch %{ix86}
-export CFLAGS=$(echo $RPM_OPT_FLAGS | sed -e "s/-mtune=[^ ]*//g" | sed -e "s/-march=[^ ]*//g")" -march=i686"
+  export CFLAGS=$(echo %{optflags} | sed -e "s/-mtune=[^ ]*//g" | sed -e "s/-march=[^ ]*//g")" -march=i686"
+  export CXXFLAGS=$(echo %{optflags} | sed -e "s/-mtune=[^ ]*//g" | sed -e "s/-march=[^ ]*//g")" -march=i686"
 %endif
-./configure --build=%{_build} --host=%{_host} \
-         --program-prefix=%{?_program_prefix} \
-         --prefix=%{_prefix} \
-         --exec-prefix=%{_exec_prefix} \
-         --bindir=%{_bindir} \
-         --sbindir=%{_sbindir} \
-         --sysconfdir=%{_sysconfdir} \
-         --datadir=%{_datadir} \
-         --includedir=%{_includedir} \
-         --libdir=%{_libdir} \
-         --libexecdir=%{_libexecdir} \
-         --localstatedir=%{_localstatedir} \
-         --sharedstatedir=%{_sharedstatedir} \
-         --mandir=%{_mandir} \
-         --infodir=%{_infodir} \
-         --enable-cxx --enable-shared
+
+%configure --enable-cxx --enable-shared
+
 sed -e 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' \
     -e 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' \
     -e 's|-lstdc++ -lm|-lstdc++|' \
     -i libtool
+
 export LD_LIBRARY_PATH=`pwd`/.libs
-make CFLAGS="$RPM_OPT_FLAGS" %{?_smp_mflags}
+make %{?_smp_mflags}
 cd ..
+
 %ifarch %{ix86}
 mkdir build-sse2
 cd build-sse2
 ln -s ../configure .
-export CFLAGS=$(echo $RPM_OPT_FLAGS | sed -e "s/-mtune=[^ ]*//g" | sed -e "s/-march=[^ ]*//g")" -march=pentium4"
-./configure --build=%{_build} --host=%{_host} \
-         --program-prefix=%{?_program_prefix} \
-         --prefix=%{_prefix} \
-         --exec-prefix=%{_exec_prefix} \
-         --bindir=%{_bindir} \
-         --sbindir=%{_sbindir} \
-         --sysconfdir=%{_sysconfdir} \
-         --datadir=%{_datadir} \
-         --includedir=%{_includedir} \
-         --libdir=%{_libdir} \
-         --libexecdir=%{_libexecdir} \
-         --localstatedir=%{_localstatedir} \
-         --sharedstatedir=%{_sharedstatedir} \
-         --mandir=%{_mandir} \
-         --infodir=%{_infodir} \
-         --enable-cxx
+
+export CFLAGS=$(echo %{optflags} | sed -e "s/-mtune=[^ ]*//g" | sed -e "s/-march=[^ ]*//g")" -march=pentium4"
+export CXXFLAGS=$(echo %{optflags} | sed -e "s/-mtune=[^ ]*//g" | sed -e "s/-march=[^ ]*//g")" -march=pentium4"
+
+%configure --enable-cxx
+
 sed -e 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' \
     -e 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' \
     -e 's|-lstdc++ -lm|-lstdc++|' \
     -i libtool
+
 export LD_LIBRARY_PATH=`pwd`/.libs
 make %{?_smp_mflags}
 unset CFLAGS
@@ -265,9 +255,15 @@ exit 0
 
 
 %changelog
-* Wed Nov 04 2015 Scientific Linux Auto Patch Process <SCIENTIFIC-LINUX-DEVEL@LISTSERV.FNAL.GOV>
-- Eliminated rpmbuild "bogus date" error due to inconsistent weekday,
-  by assuming the date is correct and changing the weekday.
+* Mon Mar 13 2017 David Kaspar [Dee'Kej] <dkaspar@redhat.com> - 1:6.0.0-15
+- Macro in previous changelog entry escaped
+
+* Thu Mar 09 2017 David Kaspar [Dee'Kej] <dkaspar@redhat.com> - 1:6.0.0-14
+- FLAGS filtering moved before calling %%configure macro to avoid performance regressions
+
+* Wed Feb 15 2017 David Kaspar [Dee'Kej] <dkaspar@redhat.com> - 1:6.0.0-13
+- Explicitly added '-g' option into CFLAGS & CXXFLAGS to correctly build .debug_info for i386 (bug #1413034)
+- Added a workaround to correctly add hardening flags during build process (bug #1406689)
 
 * Thu Sep 17 2015 Frantisek Kluknavsky <fkluknav@redhat.com> - 1:6.0.0-12
 - add hmac checksum to /lib/sse2/...
