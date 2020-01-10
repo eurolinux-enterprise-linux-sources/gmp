@@ -1,6 +1,6 @@
 /* Miscellaneous test program support routines.
 
-Copyright 2000, 2001, 2002, 2003, 2005 Free Software Foundation, Inc.
+Copyright 2000-2003, 2005, 2013 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -15,7 +15,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
 Public License for more details.
 
 You should have received a copy of the GNU General Public License along with
-the GNU MP Library test suite.  If not, see http://www.gnu.org/licenses/.  */
+the GNU MP Library test suite.  If not, see https://www.gnu.org/licenses/.  */
 
 #include "config.h"
 
@@ -465,7 +465,7 @@ tests_isinf (double d)
 int
 tests_hardware_setround (int mode)
 {
-#if HAVE_HOST_CPU_FAMILY_x86
+#if WANT_ASSEMBLY && HAVE_HOST_CPU_FAMILY_x86
   int  rc;
   switch (mode) {
   case 0: rc = 0; break;  /* nearest */
@@ -486,7 +486,7 @@ tests_hardware_setround (int mode)
 int
 tests_hardware_getround (void)
 {
-#if HAVE_HOST_CPU_FAMILY_x86
+#if WANT_ASSEMBLY && HAVE_HOST_CPU_FAMILY_x86
   switch ((x86_fstcw () & ~0xC00) >> 10) {
   case 0: return 0; break;  /* nearest */
   case 1: return 3; break;  /* down    */

@@ -5,19 +5,23 @@
 
 Summary: A GNU arbitrary precision library
 Name: gmp
-Version: 5.1.1
-Release: 5%{?dist}
+Version: 6.0.0
+Release: 11%{?dist}
 Epoch: 1
 URL: http://gmplib.org/
-Source0: ftp://ftp.gmplib.org/pub/gmp-%{version}/gmp-%{version}.tar.bz2
+Source0: ftp://ftp.gmplib.org/pub/gmp-%{version}/gmp-%{version}a.tar.bz2
 # or ftp://ftp.gnu.org/pub/gnu/gmp/gmp-%{version}.tar.xz
 Source2: gmp.h
 Source3: gmp-mparam.h
-Patch0: gmp-4.0.1-s390.patch
-License: LGPLv3+
+Patch1: gmp-6.0.0-ppc64.patch
+
+License: LGPLv3+ or GPLv2+
 Group: System Environment/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires: autoconf automake libtool
+BuildRequires: fipscheck
+#autoreconf on arm needs:
+BuildRequires: perl-Carp
 
 %description
 The gmp package contains GNU MP, a library for arbitrary precision
@@ -57,10 +61,15 @@ in applications.
 
 %prep
 %setup -q
-%patch0 -p1 -b .s390
+%patch1 -p1 -b .ppc64
+
+# switch the defaults to new cpus on s390x
+%ifarch s390x
+( cd mpn/s390_64; ln -s z10 s390x )
+%endif
 
 %build
-autoreconf -if
+autoreconf -ifv
 if as --help | grep -q execstack; then
   # the object files do not require an executable stack
   export CCAS="gcc -c -Wa,--noexecstack"
@@ -86,7 +95,7 @@ export CFLAGS=$(echo $RPM_OPT_FLAGS | sed -e "s/-mtune=[^ ]*//g" | sed -e "s/-ma
          --sharedstatedir=%{_sharedstatedir} \
          --mandir=%{_mandir} \
          --infodir=%{_infodir} \
-         --enable-cxx
+         --enable-cxx --enable-shared
 sed -e 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' \
     -e 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' \
     -e 's|-lstdc++ -lm|-lstdc++|' \
@@ -124,6 +133,17 @@ make %{?_smp_mflags}
 unset CFLAGS
 cd ..
 %endif
+
+# Add generation of HMAC checksums of the final stripped binaries
+# bz#1117188
+%define __spec_install_post \
+    %{?__debug_package:%{__debug_install_post}} \
+    %{__arch_install_post} \
+    %{__os_install_post} \
+    mkdir $RPM_BUILD_ROOT%{_libdir}/fipscheck \
+    fipshmac -d $RPM_BUILD_ROOT%{_libdir}/fipscheck $RPM_BUILD_ROOT%{_libdir}/libgmp.so.10.2.0 \
+    ln -s libgmp.so.10.2.0.hmac $RPM_BUILD_ROOT%{_libdir}/fipscheck/libgmp.so.10.hmac \
+%{nil}
 
 %install
 cd base
@@ -206,9 +226,13 @@ exit 0
 
 %files
 %defattr(-,root,root,-)
-%doc COPYING COPYING.LIB NEWS README
+%{!?_licensedir:%global license %%doc}
+%license COPYING COPYING.LESSERv3 COPYINGv2 COPYINGv3
+%doc NEWS README
 %{_libdir}/libgmp.so.*
 %{_libdir}/libgmpxx.so.*
+%{_libdir}/fipscheck/libgmp.so.10.2.0.hmac
+%{_libdir}/fipscheck/libgmp.so.10.hmac
 %ifarch %{ix86}
 %{_libdir}/sse2/*
 %endif
@@ -227,6 +251,26 @@ exit 0
 
 
 %changelog
+* Tue Sep 09 2014 Frantisek Kluknavsky <fkluknav@redhat.com> - 1:6.0.0-11
+- rebase to 6.0.0 (fixed)
+- resolves:#1110689
+
+* Tue Sep 09 2014 Frantisek Kluknavsky <fkluknav@redhat.com> - 1:6.0.0-10
+- rebase to 6.0.0 (fixed)
+- resolves:#1110689
+
+* Mon Sep 08 2014 Frantisek Kluknavsky <fkluknav@redhat.com> - 1:6.0.0-9
+- rebase to 6.0.0
+- resolves:#1110689
+
+* Tue Sep 02 2014 Frantisek Kluknavsky <fkluknav@redhat.com> - 1:5.1.1-9
+- added hmac checksums needed for fips
+- resolves:#1117188
+
+* Mon Aug 25 2014 Frantisek Kluknavsky <fkluknav@redhat.com> - 1:5.1.1-8
+- ppc64le
+- resolves:#1125516
+
 * Fri Jan 24 2014 Daniel Mach <dmach@redhat.com> - 1:5.1.1-5
 - Mass rebuild 2014-01-24
 

@@ -15,19 +15,16 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
 Public License for more details.
 
 You should have received a copy of the GNU General Public License along with
-the GNU MP Library test suite.  If not, see http://www.gnu.org/licenses/.  */
+the GNU MP Library test suite.  If not, see https://www.gnu.org/licenses/.  */
 
 #include "config.h"
 
-#include <iostream>
-#include <cmath>
+#include <math.h>
 
 #include "gmp.h"
 #include "gmpxx.h"
 #include "gmp-impl.h"
 #include "tests.h"
-
-using namespace std;
 
 
 #define CHECK1(Type,a,fun) \
@@ -132,6 +129,9 @@ void checkz (){
   ASSERT_ALWAYS(sgn(mpz_class(0))==0);
   ASSERT_ALWAYS(sgn(mpz_class(9))==1);
   ASSERT_ALWAYS(sgn(mpz_class(-17))==-1);
+  ASSERT_ALWAYS(mpz_class(1)+DBL_MAX>2);
+  ASSERT_ALWAYS(mpz_class(1)+DBL_MIN<2);
+  ASSERT_ALWAYS(mpz_class(1)+std::numeric_limits<double>::denorm_min()<2);
 }
 
 template<class T>
@@ -178,12 +178,19 @@ void checkqf (){
   ASSERT_ALWAYS(sgn(T(0))==0);
   ASSERT_ALWAYS(sgn(T(9))==1);
   ASSERT_ALWAYS(sgn(T(-17))==-1);
+  ASSERT_ALWAYS(T(1)+DBL_MAX>2);
+  ASSERT_ALWAYS(T(1)+DBL_MIN>1);
+  ASSERT_ALWAYS(T(1)+DBL_MIN<1.001);
+  ASSERT_ALWAYS(T(1)+std::numeric_limits<double>::denorm_min()>1);
+  ASSERT_ALWAYS(T(1)+std::numeric_limits<double>::denorm_min()<1.001);
 }
 
 void checkf (){
   ASSERT_ALWAYS(sqrt(mpf_class(7))>2.64);
   ASSERT_ALWAYS(sqrt(mpf_class(7))<2.65);
   ASSERT_ALWAYS(sqrt(mpf_class(0))==0);
+  // TODO: add some consistency checks, as described in
+  // https://gmplib.org/list-archives/gmp-bugs/2013-February/002940.html
   CHECK1(mpf_class,1.9,trunc);
   CHECK1(mpf_class,1.9,floor);
   CHECK1(mpf_class,1.9,ceil);
@@ -237,6 +244,8 @@ main (void)
 {
   tests_start();
 
+  // Enough precision for 1 + denorm_min
+  mpf_set_default_prec(DBL_MANT_DIG-DBL_MIN_EXP+42);
   checkz();
   checkqf<mpq_class>();
   checkqf<mpf_class>();

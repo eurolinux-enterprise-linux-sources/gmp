@@ -40,9 +40,17 @@ along with the GNU MP Library.  If not, see http://www.gnu.org/licenses/.  */
 #elif defined(__ia64__)
 #include "gmp-mparam-ia64.h"
 #elif defined(__powerpc64__)
+# if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 #include "gmp-mparam-ppc64.h"
+# else
+#include "gmp-mparam-ppc64le.h"
+# endif
 #elif defined(__powerpc__)
+# if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 #include "gmp-mparam-ppc.h"
+# else
+#include "gmp-mparam-ppcle.h"
+# endif
 #elif defined(__s390x__)
 #include "gmp-mparam-s390x.h"
 #elif defined(__s390__)
