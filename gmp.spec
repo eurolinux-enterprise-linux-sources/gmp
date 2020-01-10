@@ -6,7 +6,7 @@
 Summary: A GNU arbitrary precision library
 Name: gmp
 Version: 6.0.0
-Release: 11%{?dist}
+Release: 12%{?dist}
 Epoch: 1
 URL: http://gmplib.org/
 Source0: ftp://ftp.gmplib.org/pub/gmp-%{version}/gmp-%{version}a.tar.bz2
@@ -136,6 +136,19 @@ cd ..
 
 # Add generation of HMAC checksums of the final stripped binaries
 # bz#1117188
+%ifarch %{ix86}
+%define __spec_install_post \
+    %{?__debug_package:%{__debug_install_post}} \
+    %{__arch_install_post} \
+    %{__os_install_post} \
+    mkdir $RPM_BUILD_ROOT%{_libdir}/fipscheck \
+    fipshmac -d $RPM_BUILD_ROOT%{_libdir}/fipscheck $RPM_BUILD_ROOT%{_libdir}/libgmp.so.10.2.0 \
+    mkdir $RPM_BUILD_ROOT%{_libdir}/sse2/fipscheck \
+    fipshmac -d $RPM_BUILD_ROOT%{_libdir}/sse2/fipscheck $RPM_BUILD_ROOT%{_libdir}/sse2/libgmp.so.10.2.0 \
+    ln -s libgmp.so.10.2.0.hmac $RPM_BUILD_ROOT%{_libdir}/sse2/fipscheck/libgmp.so.10.hmac \
+    ln -s libgmp.so.10.2.0.hmac $RPM_BUILD_ROOT%{_libdir}/fipscheck/libgmp.so.10.hmac \
+%{nil}
+%else
 %define __spec_install_post \
     %{?__debug_package:%{__debug_install_post}} \
     %{__arch_install_post} \
@@ -144,6 +157,7 @@ cd ..
     fipshmac -d $RPM_BUILD_ROOT%{_libdir}/fipscheck $RPM_BUILD_ROOT%{_libdir}/libgmp.so.10.2.0 \
     ln -s libgmp.so.10.2.0.hmac $RPM_BUILD_ROOT%{_libdir}/fipscheck/libgmp.so.10.hmac \
 %{nil}
+%endif
 
 %install
 cd base
@@ -251,6 +265,14 @@ exit 0
 
 
 %changelog
+* Wed Nov 04 2015 Scientific Linux Auto Patch Process <SCIENTIFIC-LINUX-DEVEL@LISTSERV.FNAL.GOV>
+- Eliminated rpmbuild "bogus date" error due to inconsistent weekday,
+  by assuming the date is correct and changing the weekday.
+
+* Thu Sep 17 2015 Frantisek Kluknavsky <fkluknav@redhat.com> - 1:6.0.0-12
+- add hmac checksum to /lib/sse2/...
+- resolves:#1262803
+
 * Tue Sep 09 2014 Frantisek Kluknavsky <fkluknav@redhat.com> - 1:6.0.0-11
 - rebase to 6.0.0 (fixed)
 - resolves:#1110689
